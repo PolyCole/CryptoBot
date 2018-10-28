@@ -15,7 +15,7 @@ import org.json.*;
  * Main.java
  * 
  * This class provides functionality for the crypto currency twitter bot: @bot_coles
- * The bot wil tweet once daily, detailing the highest changes in the value of a 
+ * The bot wil tweet four times daily, detailing the highest changes in the value of a 
  * currency, either up or down.
  * 
  * The bot uses data provided by CoinMarketCap's API. 
@@ -27,6 +27,9 @@ public class Main
 	private static ArrayList<Currency> maxDailyChanges = new ArrayList<Currency>(5);
 	private static ArrayList<Currency> maxWeeklyChanges = new ArrayList<Currency>(5);
 
+	// Allows us to log the activity and duties of the bot.
+	private static Log log = new Log("log.txt");
+	
 	public static void main(String[] args)
 	{		
 		try
@@ -34,21 +37,19 @@ public class Main
 			CMC_APIWrapper api = new CMC_APIWrapper();
 			for(int i = 0; i < 365; ++i)
 			{
-				// For the seven days of the week
-				for(int j = 0; j < 7; ++j)
+				// Tweeting four times daily, seven days a week.
+				for(int j = 0; j < 28; ++j)
 				{
 					updateData(api.getTopCurrencies(100));
 					updateChangeMaxes(true);
 					generateTweet("Daily");
-					Thread.sleep(86400000);
+					Thread.sleep(21600000);
 				}
-				
+
 				// For our one weekly update.
 				updateData(api.getTopCurrencies(100));
 				updateChangeMaxes(false);
 				generateTweet("Weekly");
-				Thread.sleep(86400000);
-
 			}
 
 		}
@@ -57,7 +58,6 @@ public class Main
 			processErrorTweet();
 			System.exit(1);
 		}
-
 	}
 
 	// In case the program errors, so we're able to see it from the twitter feed.
@@ -67,6 +67,7 @@ public class Main
 		try
 		{
 			twitter.updateStatus("Encountered InterruptedException. Exiting.");
+			writeToLog("Encountered InterruptedException", "severe");
 			System.out.println("TWEETED ERROR");
 		}
 		catch(TwitterException e)
@@ -75,7 +76,7 @@ public class Main
 			System.exit(1);
 		}
 	}
-	
+
 	/**
 	 * Method reads in the JSON information from the top 100 cryptocurrencies
 	 * and updates or creates their filings as needed.
@@ -168,7 +169,7 @@ public class Main
 
 		currencies.put(id, newCurrency);
 	}
-	
+
 
 	/**
 	 * Updates either the daily maxes or the weekly maxes.
@@ -177,8 +178,14 @@ public class Main
 	private static void updateChangeMaxes(boolean isDailyChanges)
 	{
 		ArrayList<Currency> target;
-		if(isDailyChanges) target = maxDailyChanges;
-		else target = maxWeeklyChanges;
+		
+		if(isDailyChanges){
+			maxDailyChanges = new ArrayList<Currency>(5);
+			target = maxDailyChanges;
+		}else{
+			maxWeeklyChanges = new ArrayList<Currency>(5);
+			target = maxWeeklyChanges;
+		}
 
 		// Iterates over hash map.
 		for(Map.Entry<String, Currency> item : currencies.entrySet())
@@ -245,52 +252,65 @@ public class Main
 		StringBuilder sb = new StringBuilder();
 
 		Currency current = null;
-		
+
 		// Determining which array to parse.
 		ArrayList<Currency> target = isDailyMaxes ? maxDailyChanges : maxWeeklyChanges;
 
 		sb.append(timeFrame + " changes: \n");
-		
+
 		// Adding each currency.
 		for(int i = 0; i < target.size(); ++i)
 		{
 			current = target.get(i);
 			double change = isDailyMaxes ? current.getDayChange() : current.getWeekChange();
-			
+
 			sb.append(i+1 + ". " + current.getName() + "   " + change + "% : " + "($"+current.getPrice()+")\n");
 		}
 
 		sendTweet(sb.toString());	
 	}
-	
+
 	/**
 	 * Sends the tweet!
 	 * @param input : Tweet to send
 	 */
 	private static void sendTweet(String input)
 	{	
-		
+
 		ConfigurationBuilder cb = new ConfigurationBuilder();
-		
+
 		// Replace with respective api keys.
 		cb.setDebugEnabled(true)
-		  .setOAuthConsumerKey("***********************")
-		  .setOAuthConsumerSecret("*****************************")
-		  .setOAuthAccessToken("*******************************************")
-		  .setOAuthAccessTokenSecret("**********************************");
+		.setOAuthConsumerKey("MM9PexYlbhtcEEwDtaOQx9dEh")
+		.setOAuthConsumerSecret("EVVbARoHY7vE7qW4XUKBwCrpzR1KrxFcODN1j0mjx8sgUOuZ6X")
+		.setOAuthAccessToken("1048450321238843393-Ssel2dhSnJ17vpfSasCFIgCB0PVpgw")
+		.setOAuthAccessTokenSecret("MZnM299gr5uJ8dFFk1RXDN2OmPTUBO2nIhiG5GZyhyOso");
 		TwitterFactory tf = new TwitterFactory(cb.build());
-		
+
 		Twitter twitter = tf.getInstance();
 		try
 		{
 			twitter.updateStatus(input);
+			writeToLog(input, "info");
 			System.out.println("Tweeted: " + input);
 		}
 		catch(TwitterException e)
 		{
 			e.printStackTrace();
 		}
-		
+
 		System.out.println("Successfully tweeted!");
+	}
+	
+	/**
+	 * This method writes the input to the log file. 
+	 * @param input : Message to be logged.
+	 * @param severity : How severe the message is.
+	 */
+	private static void writeToLog(String input, String severity)
+	{
+		if("warning".equals(severity)) log.logger.warning(input);
+		else if("severe".equals(severity)) log.logger.severe(input);
+		else log.logger.info(input);
 	}
 }
