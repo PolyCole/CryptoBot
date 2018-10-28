@@ -281,10 +281,10 @@ public class Main
 
 		// Replace with respective api keys.
 		cb.setDebugEnabled(true)
-		.setOAuthConsumerKey("MM9PexYlbhtcEEwDtaOQx9dEh")
-		.setOAuthConsumerSecret("EVVbARoHY7vE7qW4XUKBwCrpzR1KrxFcODN1j0mjx8sgUOuZ6X")
-		.setOAuthAccessToken("1048450321238843393-Ssel2dhSnJ17vpfSasCFIgCB0PVpgw")
-		.setOAuthAccessTokenSecret("MZnM299gr5uJ8dFFk1RXDN2OmPTUBO2nIhiG5GZyhyOso");
+		.setOAuthConsumerKey("******************************")
+		.setOAuthConsumerSecret("******************************")
+		.setOAuthAccessToken("******************************")
+		.setOAuthAccessTokenSecret("******************************");
 		TwitterFactory tf = new TwitterFactory(cb.build());
 
 		Twitter twitter = tf.getInstance();
